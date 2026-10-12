@@ -265,7 +265,7 @@ class _SystemCardState extends State<SystemCard> {
     final uptime = widget.snap.uptimeMs;
     return _CardShell(
       title: 'Sistem',
-      ring: RingGauge(
+      ring: const RingGauge(
         value: null,
         color: AppColors.blue,
         child: const Icon(Icons.timer_outlined, size: 24),

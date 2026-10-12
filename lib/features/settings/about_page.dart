@@ -26,7 +26,7 @@ class _AboutPageState extends State<AboutPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
-            Center(child: LogoPlate(size: 132, radius: 34)),
+            const Center(child: LogoPlate(size: 132, radius: 34)),
             const SizedBox(height: 18),
             Center(
               child: Text(

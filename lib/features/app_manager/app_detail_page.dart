@@ -112,8 +112,8 @@ class AppDetailPage extends StatelessWidget {
               ],
             ),
             if (!canUninstall)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
+              const Padding(
+                padding: EdgeInsets.only(top: 12),
                 child: const LimitationNotice(
                   'Aplikasi sistem tidak dapat dihapus oleh Task X. Untuk menonaktifkan, gunakan halaman Info aplikasi Android.',
                 ),
