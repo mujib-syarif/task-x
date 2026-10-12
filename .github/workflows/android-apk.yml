@@ -79,7 +79,7 @@ jobs:
         run: $RUNNER_TEMP/ann.sh test flutter test
 
       - name: Build release APK
-        run: $RUNNER_TEMP/ann.sh build flutter build apk --release
+        run: $RUNNER_TEMP/ann.sh build flutter build apk --release --target-platform android-arm,android-arm64
 
       - name: Verify APK
         id: apk
@@ -100,7 +100,8 @@ jobs:
           aapt2="$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)"
           info="no-aapt2"
           if [ -n "$aapt2" ]; then
-            info="$("$aapt2" dump badging "$out" 2>&1 | grep -E "^(package|application-label|application-icon|launchable)" | head -12)"
+            dump="$("$aapt2" dump badging "$out" 2>&1)"
+            info="$(printf '%s\n' "$dump" | grep -E "^(package|application-label:|application-icon-(160|480|640)|launchable)" | head -8)"
             echo "$info"
             echo "$info" | grep -q "application-icon" || { echo "Ikon launcher tidak ditemukan"; fail=1; }
           fi
