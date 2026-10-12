@@ -268,7 +268,7 @@ class _SystemCardState extends State<SystemCard> {
       ring: const RingGauge(
         value: null,
         color: AppColors.blue,
-        child: const Icon(Icons.timer_outlined, size: 24),
+        child: Icon(Icons.timer_outlined, size: 24),
       ),
       badge: const DataBadge(DataKind.periodic),
       lines: [
