@@ -39,7 +39,7 @@ void main() {
     test('menghitung fraksi pemakaian dari dua pembacaan', () {
       // user nice system idle iowait
       final prev = [100, 0, 100, 800, 0];
-      final cur = [200, 0, 200, 1000, 0];
+      final cur = [250, 0, 250, 1000, 0];
       // total delta = 500, idle delta = 200 -> 60%
       expect(CpuMath.usage(prev, cur), closeTo(0.6, 1e-9));
     });
