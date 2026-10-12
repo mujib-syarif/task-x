@@ -52,17 +52,34 @@ jobs:
           echo "applicationId:"
           grep -rn "applicationId" android/app/build.gradle* || true
 
+
+      - name: Define log helper
+        run: |
+          cat > "$RUNNER_TEMP/ann.sh" <<'SH'
+          # usage: ann.sh <title> <command...>  -> menjalankan perintah; jika gagal, kirim output sebagai annotation
+          title="$1"; shift
+          set +e
+          "$@" 2>&1 | tee "$RUNNER_TEMP/out.log"
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            msg="$(tail -c 12000 "$RUNNER_TEMP/out.log" | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')"
+            echo "::error title=$title::$msg"
+          fi
+          exit $code
+          SH
+          chmod +x "$RUNNER_TEMP/ann.sh"
+
       - name: Pub get
-        run: flutter pub get
+        run: $RUNNER_TEMP/ann.sh pub flutter pub get
 
       - name: Analyze
-        run: flutter analyze
+        run: $RUNNER_TEMP/ann.sh analyze flutter analyze
 
       - name: Test
-        run: flutter test
+        run: $RUNNER_TEMP/ann.sh test flutter test
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: $RUNNER_TEMP/ann.sh build flutter build apk --release
 
       - name: Verify APK
         id: apk
