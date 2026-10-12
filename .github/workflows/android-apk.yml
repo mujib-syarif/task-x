@@ -84,18 +84,32 @@ jobs:
       - name: Verify APK
         id: apk
         run: |
-          set -euo pipefail
+          set -uo pipefail
           apk="build/app/outputs/flutter-apk/app-release.apk"
-          test -s "$apk"
+          test -s "$apk" || { echo "::error title=verify::APK tidak dihasilkan"; exit 1; }
           mkdir -p dist
           ver="$(grep '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)"
           out="dist/TaskX-v${ver}-${GITHUB_RUN_NUMBER}.apk"
           cp "$apk" "$out"
           echo "path=$out" >> "$GITHUB_OUTPUT"
           ls -l "$out"
-          unzip -l "$out" | grep -E "flutter_assets/assets/images/mujib_logo.png" \
-            || { echo "Logo tidak ada di APK"; exit 1; }
-          unzip -l "$out" | grep -E "res/.*ic_launcher" | head -5
+          unzip -l "$out" > "$RUNNER_TEMP/apk_list.txt"
+          fail=0
+          grep -q "flutter_assets/assets/images/mujib_logo.png" "$RUNNER_TEMP/apk_list.txt" \
+            || { echo "Logo tidak ada di APK"; fail=1; }
+          aapt2="$(ls "$ANDROID_HOME"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)"
+          info="no-aapt2"
+          if [ -n "$aapt2" ]; then
+            info="$("$aapt2" dump badging "$out" 2>&1 | grep -E "^(package|application-label|application-icon|launchable)" | head -12)"
+            echo "$info"
+            echo "$info" | grep -q "application-icon" || { echo "Ikon launcher tidak ditemukan"; fail=1; }
+          fi
+          msg="$(printf '%s\n' "size=$(stat -c %s "$out")" "$info" | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
+          if [ "$fail" -ne 0 ]; then
+            echo "::error title=verify::FAILED%0A$msg%0A$(grep -E 'logo|launcher' "$RUNNER_TEMP/apk_list.txt" | head -15 | sed 's/%/%25/g' | paste -sd'|')"
+            exit 1
+          fi
+          echo "::notice title=verify::OK%0A$msg"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
