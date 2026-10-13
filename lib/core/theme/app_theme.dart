@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const bgDark = Color(0xFF0A0A0C);
+  static const bgDark = Color(0xFF07090C);
   static const bgLight = Color(0xFFF2F2F7);
-  static const blue = Color(0xFF0A84FF);
+  /// Aksen utama Task X (cyan). Nama `blue` dipertahankan agar kode lama tidak berubah.
+  static const blue = Color(0xFF06B6D4);
   static const green = Color(0xFF30D158);
   static const orange = Color(0xFFFF9F0A);
   static const red = Color(0xFFFF453A);
@@ -69,7 +70,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        indicatorColor: fg.withValues(alpha: 0.10),
+        indicatorColor: AppColors.blue.withValues(alpha: dark ? 0.22 : 0.16),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
@@ -89,10 +90,25 @@ class AppTheme {
         textColor: fg,
         subtitleTextStyle: TextStyle(color: muted, fontSize: 12.5),
       ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(color: AppColors.blue),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor: AppColors.blue,
+        labelColor: fg,
+        unselectedLabelColor: muted,
+        dividerColor: fg.withValues(alpha: 0.08),
+      ),
+      switchTheme: SwitchThemeData(
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? AppColors.green : null,
+        ),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? Colors.white : null,
+        ),
+      ),
       chipTheme: ChipThemeData(
         side: BorderSide(color: fg.withValues(alpha: 0.12)),
         backgroundColor: Colors.transparent,
-        selectedColor: fg.withValues(alpha: 0.14),
+        selectedColor: AppColors.blue.withValues(alpha: 0.22),
         labelStyle: TextStyle(color: fg, fontSize: 13),
         showCheckmark: false,
       ),

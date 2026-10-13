@@ -13,10 +13,12 @@ class DashboardModule {
   static const battery = 'battery';
   static const network = 'network';
   static const system = 'system';
+  static const device = 'device';
 
-  static const all = [ram, cpu, storage, battery, network, system];
+  static const all = [device, ram, cpu, storage, battery, network, system];
 
   static String label(String id) => switch (id) {
+        DashboardModule.device => 'Informasi perangkat',
         DashboardModule.ram => 'Memori (RAM)',
         DashboardModule.cpu => 'CPU',
         DashboardModule.storage => 'Penyimpanan',
@@ -57,7 +59,17 @@ class AppSettings extends ChangeNotifier {
       final warn = p.getInt('thermalWarnC');
       if (warn != null && Thermal.warnOptions.contains(warn)) thermalWarnC = warn;
       final mods = p.getStringList('modules');
-      if (mods != null) modules = mods.where(DashboardModule.all.contains).toSet();
+      if (mods != null) {
+        modules = mods.where(DashboardModule.all.contains).toSet();
+        // Migrasi v1.0 -> v1.1: modul "Informasi perangkat" baru, aktifkan sekali.
+        if (!(p.getBool('device_module_seen') ?? false)) {
+          modules.add(DashboardModule.device);
+          p.setBool('device_module_seen', true);
+          p.setStringList('modules', modules.toList());
+        }
+      } else {
+        p.setBool('device_module_seen', true);
+      }
       lastScanUri = p.getString('lastScanUri');
     } catch (_) {
       // Gunakan nilai bawaan jika penyimpanan tidak dapat dibaca.

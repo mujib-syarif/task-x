@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/services/app_settings.dart';
 import '../../core/services/services.dart';
+import '../../core/utils/thermal.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/glass_card.dart';
 import 'about_page.dart';
@@ -110,6 +111,37 @@ class SettingsPage extends StatelessWidget {
                       icon: const Icon(Icons.delete_sweep_rounded, size: 18),
                       label: const Text('Hapus riwayat grafik'),
                     ),
+                  ],
+                ),
+              ),
+              const SectionTitle('Peringatan suhu baterai'),
+              GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Tampilkan peringatan suhu'),
+                      subtitle: const Text('Banner di Beranda dan tab Baterai. Hanya suhu baterai, bukan suhu CPU.'),
+                      value: settings.thermalAlert,
+                      onChanged: settings.setThermalAlert,
+                    ),
+                    if (settings.thermalAlert) ...[
+                      const SizedBox(height: 4),
+                      const Text('Ambang hangat (peringatan "panas" = ambang + 5 °C)', style: TextStyle(fontSize: 12.5)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final c in Thermal.warnOptions)
+                            ChoiceChip(
+                              label: Text('$c °C'),
+                              selected: settings.thermalWarnC == c,
+                              onSelected: (_) => settings.setThermalWarnC(c),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

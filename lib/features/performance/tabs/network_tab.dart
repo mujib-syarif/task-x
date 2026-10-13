@@ -43,16 +43,35 @@ class NetworkTab extends StatelessWidget {
             InfoRow('Jaringan berbayar (metered)', n == null ? kUnavailable : (n.metered ? 'Ya' : 'Tidak')),
             InfoRow('Kecepatan unduh saat ini', formatRate(snap?.netDownBps)),
             InfoRow('Kecepatan unggah saat ini', formatRate(snap?.netUpBps)),
+            InfoRow(
+              'Diterima sesi ini',
+              snap?.sessionRxBytes == null ? kUnavailable : formatBytes(snap!.sessionRxBytes),
+            ),
+            InfoRow(
+              'Dikirim sesi ini',
+              snap?.sessionTxBytes == null ? kUnavailable : formatBytes(snap!.sessionTxBytes),
+            ),
+            InfoRow(
+              'Sesi dimulai',
+              snap?.sessionStart == null ? kUnavailable : formatClock(snap!.sessionStart!),
+            ),
             InfoRow('Total diterima (sejak boot)', n?.rxBytes == null ? kUnavailable : formatBytes(n!.rxBytes)),
             InfoRow('Total dikirim (sejak boot)', n?.txBytes == null ? kUnavailable : formatBytes(n!.txBytes)),
-            InfoRow('Seluler diterima', n?.mobileRxBytes == null ? kUnavailable : formatBytes(n!.mobileRxBytes)),
-            InfoRow('Seluler dikirim', n?.mobileTxBytes == null ? kUnavailable : formatBytes(n!.mobileTxBytes)),
+            InfoRow('Seluler diterima (sejak boot)', n?.mobileRxBytes == null ? kUnavailable : formatBytes(n!.mobileRxBytes)),
+            InfoRow('Seluler dikirim (sejak boot)', n?.mobileTxBytes == null ? kUnavailable : formatBytes(n!.mobileTxBytes)),
             InfoRow(
               'Estimasi kapasitas link (unduh/unggah)',
               n?.downKbps == null ? kUnavailable : '${n!.downKbps} / ${n.upKbps ?? '—'} Kbps',
             ),
           ],
         ),
+        const LimitationNotice(
+          'Cakupan statistik: seluruh sistem (semua aplikasi), bukan hanya Task X. "Sesi ini" = selisih penghitung '
+          'sistem sejak Task X dibuka (hilang saat Task X ditutup). "Sejak boot" = akumulasi sejak perangkat menyala; '
+          'penghitung ini dapat mereset saat perangkat dihidupkan ulang. Status VPN aktif hanya berarti lalu lintas '
+          'melewati VPN, bukan jaminan koneksi aman.',
+        ),
+        const SizedBox(height: 10),
         const LimitationNotice(
           'Kecepatan dihitung dari selisih penghitung lalu lintas sistem, bukan per aplikasi. '
           'Android tidak menyediakan kecepatan jaringan per aplikasi secara real-time. '

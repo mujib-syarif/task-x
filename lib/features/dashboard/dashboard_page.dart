@@ -26,7 +26,10 @@ class DashboardPage extends StatelessWidget {
             builder: (context, snap, _) {
               final modules = settings.modules;
               final interval = '${settings.intervalSeconds} dtk';
-              return ListView(
+              return RefreshIndicator(
+                onRefresh: metrics.refresh,
+                child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
                   Padding(
@@ -49,6 +52,9 @@ class DashboardPage extends StatelessWidget {
                       child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                     )
                   else ...[
+                    if (modules.contains(DashboardModule.device)) DeviceCard(snap: snap),
+                    if (settings.thermalAlert && modules.contains(DashboardModule.battery))
+                      ThermalBanner(tempC: snap.battery?.temperatureC, warnC: settings.thermalWarnC),
                     if (modules.contains(DashboardModule.ram)) RamCard(snap: snap, interval: interval),
                     if (modules.contains(DashboardModule.cpu)) CpuCard(snap: snap, interval: interval),
                     if (modules.contains(DashboardModule.storage)) StorageCard(snap: snap),
@@ -59,6 +65,7 @@ class DashboardPage extends StatelessWidget {
                     const Center(child: DataBadge(DataKind.periodic, detail: 'pembaruan tiap interval pengaturan')),
                   ],
                 ],
+                ),
               );
             },
           );

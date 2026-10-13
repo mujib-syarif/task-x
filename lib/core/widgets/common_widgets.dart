@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 import '../utils/format.dart';
+import '../utils/thermal.dart';
 
 /// Jenis sumber data, supaya pengguna tahu seberapa "hidup" angka yang tampil.
 enum DataKind { realtime, periodic, snapshot, unavailable }
@@ -189,4 +190,46 @@ void showMessage(BuildContext context, String text) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(text), duration: const Duration(seconds: 2)));
+}
+
+/// Peringatan suhu BATERAI. Tidak tampil jika suhu normal atau tidak terbaca.
+class ThermalBanner extends StatelessWidget {
+  const ThermalBanner({super.key, required this.tempC, required this.warnC});
+
+  final double? tempC;
+  final int warnC;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = Thermal.evaluate(tempC, warnC);
+    if (level != ThermalLevel.warm && level != ThermalLevel.hot) return const SizedBox.shrink();
+    final hot = level == ThermalLevel.hot;
+    final color = hot ? AppColors.red : AppColors.orange;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.35), width: 0.8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.thermostat_rounded, size: 20, color: color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${hot ? 'Suhu baterai tinggi' : 'Suhu baterai hangat'}: ${tempC!.toStringAsFixed(1)} °C '
+                '(ambang $warnC °C). Ini suhu baterai, bukan suhu CPU. '
+                '${hot ? 'Hentikan penggunaan berat dan lepas pengisi daya bila perangkat terasa panas.' : 'Kurangi penggunaan berat bila terus naik.'}',
+                style: TextStyle(fontSize: 12.5, height: 1.4, color: context.fg),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

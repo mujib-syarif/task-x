@@ -23,10 +23,12 @@ class BatteryTab extends StatelessWidget {
     final temp = Services.metrics.history(Series.batteryTemp);
     final filled = Services.settings.filledCharts;
     final current = b?.currentNowUa;
+    final settings = Services.settings;
 
     return TabScaffold(
       snap: snap,
       children: [
+        if (settings.thermalAlert) ThermalBanner(tempC: b?.temperatureC, warnC: settings.thermalWarnC),
         ChartCard(
           title: 'Level baterai',
           footer: historyFooter(),
@@ -53,8 +55,8 @@ class BatteryTab extends StatelessWidget {
           ),
         ),
         ChartCard(
-          title: 'Suhu baterai',
-          footer: 'Hanya suhu baterai yang tersedia; suhu CPU/komponen lain tidak dapat dibaca aplikasi biasa.',
+          title: 'Suhu baterai (bukan suhu CPU)',
+          footer: 'Hanya suhu baterai yang tersedia; suhu CPU/komponen lain tidak dapat dibaca aplikasi biasa. ${settings.thermalAlert ? 'Peringatan di ${settings.thermalWarnC} °C.' : 'Peringatan suhu nonaktif.'}',
           child: LineChart(
             series: [ChartSeries(values: temp, color: AppColors.orange)],
             minY: 20,
@@ -70,7 +72,7 @@ class BatteryTab extends StatelessWidget {
             InfoRow('Sumber daya', b?.pluggedLabel ?? kUnavailable),
             InfoRow('Suhu baterai', b?.temperatureC == null ? kUnavailable : '${b!.temperatureC!.toStringAsFixed(1)} °C'),
             InfoRow('Tegangan', b?.voltageMv == null ? kUnavailable : '${b!.voltageMv} mV'),
-            InfoRow('Kondisi', b?.healthLabel ?? kUnavailable),
+            InfoRow('Kondisi (laporan sistem)', b?.healthLabel ?? kUnavailable),
             InfoRow('Teknologi', b?.technology ?? kUnavailable),
             InfoRow(
               'Arus saat ini',
@@ -79,7 +81,9 @@ class BatteryTab extends StatelessWidget {
           ],
         ),
         const LimitationNotice(
-          'Nilai arus bergantung pada driver perangkat dan dapat memakai satuan/tanda yang berbeda antar produsen.',
+          'Nilai arus bergantung pada driver perangkat dan dapat memakai satuan/tanda yang berbeda antar produsen. '
+          'Task X tidak menampilkan kesehatan baterai, kapasitas aktual, atau estimasi waktu pengisian karena '
+          'Android tidak menyediakan data itu untuk aplikasi biasa.',
         ),
       ],
     );

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/metrics_service.dart';
+import '../../core/models/device_models.dart';
 import '../../core/services/native_bridge.dart';
+import '../../core/services/services.dart';
+import '../../core/utils/thermal.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/format.dart';
 import '../../core/widgets/common_widgets.dart';
@@ -209,6 +212,12 @@ class BatteryCard extends StatelessWidget {
               _Line('Status', b.statusLabel),
               _Line('Suhu baterai', b.temperatureC == null ? kUnavailable : '${b.temperatureC!.toStringAsFixed(1)} °C'),
               _Line('Tegangan', b.voltageMv == null ? kUnavailable : '${b.voltageMv} mV'),
+              if (Services.settings.thermalAlert)
+                switch (Thermal.evaluate(b.temperatureC, Services.settings.thermalWarnC)) {
+                  ThermalLevel.hot => const _Line('Peringatan suhu', 'Panas'),
+                  ThermalLevel.warm => const _Line('Peringatan suhu', 'Hangat'),
+                  _ => const SizedBox.shrink(),
+                },
             ],
     );
   }
@@ -278,6 +287,54 @@ class _SystemCardState extends State<SystemCard> {
           builder: (context, s) => _Line('Aplikasi terinstal', s.data == null ? '…' : '${s.data}'),
         ),
       ],
+    );
+  }
+}
+
+/// Informasi perangkat (snapshot): model, Android, SoC, ABI, RAM.
+class DeviceCard extends StatefulWidget {
+  const DeviceCard({super.key, required this.snap});
+
+  final MetricsSnapshot snap;
+
+  @override
+  State<DeviceCard> createState() => _DeviceCardState();
+}
+
+class _DeviceCardState extends State<DeviceCard> {
+  late final Future<DeviceInfo?> _device = NativeBridge.instance.deviceInfo();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<DeviceInfo?>(
+      future: _device,
+      builder: (context, s) {
+        final loading = s.connectionState != ConnectionState.done;
+        final d = s.data;
+        final mem = widget.snap.memory;
+        return _CardShell(
+          title: d == null ? 'Perangkat' : '${d.manufacturer} ${d.model}',
+          ring: const RingGauge(
+            value: null,
+            color: AppColors.blue,
+            child: Icon(Icons.smartphone_rounded, size: 24),
+          ),
+          badge: loading
+              ? const DataBadge(DataKind.snapshot, detail: 'memuat')
+              : (d == null ? const DataBadge(DataKind.unavailable) : const DataBadge(DataKind.snapshot)),
+          lines: loading
+              ? const [_Line('Status', 'Memuat…')]
+              : (d == null
+                  ? const [_Line('Status', kUnavailable)]
+                  : [
+                      _Line('Android', '${d.androidVersion} (API ${d.sdkInt})'),
+                      _Line('Chipset', d.soc ?? d.hardware),
+                      _Line('CPU', '${d.cpuCores} core · ${d.abis.isEmpty ? kUnavailable : d.abis.first}'),
+                      _Line('RAM dilaporkan sistem', mem == null ? kUnavailable : formatBytes(mem.totalBytes)),
+                      _Line('Layar', '${d.screenWidthPx} × ${d.screenHeightPx} px'),
+                    ]),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/services/metrics_service.dart';
+import '../../../core/services/native_bridge.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/format.dart';
 import '../../../core/widgets/common_widgets.dart';
@@ -48,6 +49,16 @@ class StorageTab extends StatelessWidget {
           onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const StoragePage())),
           icon: const Icon(Icons.folder_open_rounded, size: 20),
           label: const Text('Buka Storage Analyzer'),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final ok = await NativeBridge.instance.openStorageSettings();
+            if (!context.mounted) return;
+            if (!ok) showMessage(context, 'Tidak dapat membuka pengaturan penyimpanan');
+          },
+          icon: const Icon(Icons.settings_applications_rounded, size: 20),
+          label: const Text('Pengaturan penyimpanan Android'),
         ),
         const SizedBox(height: 12),
         const LimitationNotice(
