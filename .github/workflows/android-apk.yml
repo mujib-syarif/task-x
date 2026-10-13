@@ -105,6 +105,20 @@ jobs:
             echo "$info"
             echo "$info" | grep -q "application-icon" || { echo "Ikon launcher tidak ditemukan"; fail=1; }
           fi
+          unzip -tq "$out" > "$RUNNER_TEMP/ziptest.txt" 2>&1 || { echo "ZIP rusak"; fail=1; }
+          sdk="$(printf '%s\n' "${dump:-}" | grep -E "^(sdkVersion|targetSdkVersion|native-code)" | paste -sd' ')"
+          apksigner="$(ls "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)"
+          sig="no-apksigner"
+          if [ -n "$apksigner" ]; then
+            sig="$("$apksigner" verify --verbose --print-certs "$out" 2>&1 | grep -E "^(Verifies|Verified using|DOES NOT|ERROR|Signer #1 certificate (DN|SHA-256))" | head -8)"
+            echo "$sig"
+            echo "$sig" | grep -q "^Verifies" || { echo "Tanda tangan tidak valid"; fail=1; }
+          fi
+          info="$info
+          $sdk
+          zip: $(tail -1 "$RUNNER_TEMP/ziptest.txt")
+          $sig
+          sha256=$(sha256sum "$out" | cut -d' ' -f1)"
           msg="$(printf '%s\n' "size=$(stat -c %s "$out")" "$info" | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')"
           if [ "$fail" -ne 0 ]; then
             echo "::error title=verify::FAILED%0A$msg%0A$(grep -E 'logo|launcher' "$RUNNER_TEMP/apk_list.txt" | head -15 | sed 's/%/%25/g' | paste -sd'|')"
