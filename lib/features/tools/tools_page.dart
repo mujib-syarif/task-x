@@ -11,6 +11,7 @@ import '../../core/widgets/glass_card.dart';
 import '../performance/performance_page.dart';
 import '../storage/storage_page.dart';
 import '../system_info/system_info_page.dart';
+import 'report_page.dart';
 import 'sensors_page.dart';
 
 class ToolsPage extends StatelessWidget {
@@ -22,6 +23,7 @@ class ToolsPage extends StatelessWidget {
 
   Future<String> _buildReport() async {
     final bridge = NativeBridge.instance;
+    await Services.metrics.refresh();
     final device = await bridge.deviceInfo();
     final sensors = await bridge.sensors();
     return ReportService.toText(ReportService.sections(device, Services.metrics.snapshot.value, sensors));
@@ -32,20 +34,6 @@ class ToolsPage extends StatelessWidget {
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) return;
     showMessage(context, 'Ringkasan sistem disalin');
-  }
-
-  Future<void> _exportReport(BuildContext context) async {
-    final text = await _buildReport();
-    final t = DateTime.now();
-    final name = 'taskx_laporan_${t.year}${two(t.month)}${two(t.day)}_${two(t.hour)}${two(t.minute)}.txt';
-    try {
-      final uri = await NativeBridge.instance.saveTextFile(name, text);
-      if (!context.mounted) return;
-      showMessage(context, uri == null ? 'Ekspor dibatalkan' : 'Laporan disimpan: $name');
-    } catch (_) {
-      if (!context.mounted) return;
-      showMessage(context, 'Gagal menyimpan laporan');
-    }
   }
 
   Future<void> _cleanOwnFiles(BuildContext context) async {
@@ -101,8 +89,8 @@ class ToolsPage extends StatelessWidget {
           ),
           _ToolTile(
             icon: Icons.sensors_rounded,
-            title: 'Daftar sensor',
-            subtitle: 'Sensor yang tersedia di perangkat ini',
+            title: 'Sensor Lab',
+            subtitle: 'Pembacaan real-time dan daftar sensor perangkat',
             onTap: () => _push(context, const SensorsPage()),
           ),
           _ToolTile(
@@ -125,10 +113,10 @@ class ToolsPage extends StatelessWidget {
             onTap: () => _copySummary(context),
           ),
           _ToolTile(
-            icon: Icons.ios_share_rounded,
-            title: 'Ekspor laporan ke file',
-            subtitle: 'Simpan .txt ke lokasi pilihan Anda',
-            onTap: () => _exportReport(context),
+            icon: Icons.description_rounded,
+            title: 'Laporan sistem',
+            subtitle: 'Pratinjau, simpan TXT/JSON, salin, bagikan',
+            onTap: () => _push(context, const ReportPage()),
           ),
           _ToolTile(
             icon: Icons.cleaning_services_rounded,

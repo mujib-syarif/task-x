@@ -17,13 +17,19 @@ void main() {
 
   group('formatDuration', () {
     test('menit dan detik', () {
-      expect(formatDuration(const Duration(minutes: 5, seconds: 7)), '5 mnt 7 dtk');
+      expect(formatDuration(const Duration(minutes: 5, seconds: 7)), '5 menit 7 detik');
     });
     test('jam', () {
-      expect(formatDuration(const Duration(hours: 3, minutes: 4)), '3 jam 4 mnt');
+      expect(formatDuration(const Duration(hours: 3, minutes: 4)), '3 jam 4 menit');
+    });
+    test('satu hari tidak ambigu', () {
+      expect(formatDuration(const Duration(days: 1, hours: 9, minutes: 11)), '1 hari 9 jam 11 menit');
+    });
+    test('di bawah semenit', () {
+      expect(formatDuration(const Duration(seconds: 42)), '42 detik');
     });
     test('hari', () {
-      expect(formatDuration(const Duration(days: 2, hours: 5, minutes: 1)), '2 hr 5 jam 1 mnt');
+      expect(formatDuration(const Duration(days: 2, hours: 5, minutes: 1)), '2 hari 5 jam 1 menit');
     });
   });
 

@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import '../models/device_models.dart';
 import '../utils/cpu_math.dart';
+import '../utils/traffic.dart';
 import 'app_settings.dart';
 import 'native_bridge.dart';
 
@@ -23,6 +24,9 @@ class MetricsSnapshot {
     this.netDownBps,
     this.netUpBps,
     this.uptimeMs,
+    this.sessionRxBytes,
+    this.sessionTxBytes,
+    this.sessionStart,
   });
 
   final DateTime time;
@@ -37,6 +41,11 @@ class MetricsSnapshot {
   final double? netDownBps;
   final double? netUpBps;
   final int? uptimeMs;
+
+  /// Lalu lintas seluruh sistem sejak Task X dibuka (selisih penghitung sistem).
+  final int? sessionRxBytes;
+  final int? sessionTxBytes;
+  final DateTime? sessionStart;
 }
 
 class SnapshotNotifier extends ValueNotifier<MetricsSnapshot?> {
@@ -45,7 +54,10 @@ class SnapshotNotifier extends ValueNotifier<MetricsSnapshot?> {
   void bump() => notifyListeners();
 }
 
-/// Mengumpulkan metrik secara berkala. Berhenti ketika aplikasi tidak aktif.
+/// Mengumpulkan metrik secara berkala.
+///
+/// Timer hanya berjalan jika ada halaman yang "menyewa" (acquire) layanan DAN aplikasi
+/// sedang di latar depan. Tanpa penyewa atau di latar belakang, tidak ada timer aktif.
 class MetricsService with WidgetsBindingObserver {
   MetricsService(this._settings) {
     _lastInterval = _settings.intervalSeconds;
@@ -61,24 +73,55 @@ class MetricsService with WidgetsBindingObserver {
   Timer? _timer;
   bool _busy = false;
   bool _observing = false;
-  bool _active = false;
+  bool _foreground = true;
+  int _leases = 0;
   int _lastInterval = 2;
+  final SessionTraffic _session = SessionTraffic();
 
   List<int>? _prevStat;
   int? _prevRx;
   int? _prevTx;
   DateTime? _prevTime;
 
+  /// Hanya untuk pengujian/diagnostik.
+  bool get isRunning => _timer != null;
+  int get leaseCount => _leases;
+
   List<double> history(Series s) => _history[s]!.toList(growable: false);
 
+  /// Mengambil satu pembacaan awal; tidak menyalakan timer.
   void start() {
     if (!_observing) {
       WidgetsBinding.instance.addObserver(this);
       _observing = true;
     }
-    _active = true;
-    _schedule();
     refresh();
+  }
+
+  /// Halaman yang menampilkan data langsung memanggil ini saat tampil dan [release] saat tidak.
+  void acquire() {
+    _leases++;
+    _sync(refreshNow: _leases == 1);
+  }
+
+  void release() {
+    if (_leases > 0) _leases--;
+    _sync();
+  }
+
+  void _sync({bool refreshNow = false}) {
+    final shouldRun = _leases > 0 && _foreground;
+    if (shouldRun) {
+      if (_timer == null) {
+        _resetDeltas();
+        _schedule();
+        refreshNow = true;
+      }
+      if (refreshNow) refresh();
+    } else {
+      _timer?.cancel();
+      _timer = null;
+    }
   }
 
   void _schedule() {
@@ -95,22 +138,14 @@ class MetricsService with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _active = true;
-      _resetDeltas();
-      _schedule();
-      refresh();
-    } else {
-      _active = false;
-      _timer?.cancel();
-      _timer = null;
-    }
+    _foreground = state == AppLifecycleState.resumed;
+    _sync(refreshNow: false);
   }
 
   void _onSettings() {
     if (_settings.intervalSeconds != _lastInterval) {
       _lastInterval = _settings.intervalSeconds;
-      if (_active) _schedule();
+      if (_timer != null) _schedule();
     }
     for (final q in _history.values) {
       while (q.length > _settings.historyPoints) {
@@ -183,6 +218,7 @@ class MetricsService with WidgetsBindingObserver {
       _prevRx = rx;
       _prevTx = tx;
       _prevTime = now;
+      _session.update(rx, tx, now);
 
       _push(Series.ram, mem == null ? null : mem.usedFraction * 100);
       _push(Series.cpu, cpuUsage == null ? null : cpuUsage * 100);
@@ -202,6 +238,9 @@ class MetricsService with WidgetsBindingObserver {
         netDownBps: down,
         netUpBps: up,
         uptimeMs: uptime,
+        sessionRxBytes: _session.rx(rx),
+        sessionTxBytes: _session.tx(tx),
+        sessionStart: _session.started,
       );
     } finally {
       _busy = false;

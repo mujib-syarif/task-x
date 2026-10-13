@@ -3,8 +3,10 @@ package com.mujibsyarif.task_x
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.Executors
@@ -18,6 +20,7 @@ class MainActivity : FlutterActivity() {
     private val device by lazy { DeviceProvider(this) }
     private val apps by lazy { AppsProvider(this) }
     private val scanner by lazy { StorageScanner(this) }
+    private val sensorStreamer by lazy { SensorStreamer(this) }
 
     private val reqPickTree = 4101
     private val reqCreateDoc = 4102
@@ -28,6 +31,8 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result -> handle(call, result) }
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, "taskx/sensors")
+            .setStreamHandler(sensorStreamer)
     }
 
     private fun async(result: MethodChannel.Result, block: () -> Any?) {
@@ -90,8 +95,13 @@ class MainActivity : FlutterActivity() {
                         result,
                         call.argument<String>("name") ?: "taskx_report.txt",
                         call.argument<String>("content") ?: "",
+                        call.argument<String>("mime") ?: "text/plain",
                     )
                 }
+                "shareText" -> result.success(
+                    shareText(call.argument<String>("subject") ?: "", call.argument<String>("text") ?: ""),
+                )
+                "openStorageSettings" -> result.success(openStorageSettings())
                 else -> result.notImplemented()
             }
         } catch (e: Exception) {
@@ -110,7 +120,7 @@ class MainActivity : FlutterActivity() {
         startActivityForResult(intent, reqPickTree)
     }
 
-    private fun startSaveText(result: MethodChannel.Result, name: String, content: String) {
+    private fun startSaveText(result: MethodChannel.Result, name: String, content: String, mime: String) {
         if (pendingResult != null) {
             result.error("busy", "Operasi lain sedang berjalan", null)
             return
@@ -119,9 +129,35 @@ class MainActivity : FlutterActivity() {
         pendingContent = content
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
         intent.addCategory(Intent.CATEGORY_OPENABLE)
-        intent.type = "text/plain"
+        intent.type = mime
         intent.putExtra(Intent.EXTRA_TITLE, name)
         startActivityForResult(intent, reqCreateDoc)
+    }
+
+    /** Berbagi teks laporan lewat lembar berbagi sistem Android; tidak ada data keluar dari aplikasi tanpa pilihan pengguna. */
+    private fun shareText(subject: String, text: String): Boolean = try {
+        val send = Intent(Intent.ACTION_SEND)
+        send.type = "text/plain"
+        send.putExtra(Intent.EXTRA_SUBJECT, subject)
+        send.putExtra(Intent.EXTRA_TEXT, text)
+        startActivity(Intent.createChooser(send, "Bagikan laporan"))
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    /** Membuka pengaturan penyimpanan Android; jatuh ke pengaturan umum jika tidak tersedia. */
+    private fun openStorageSettings(): Boolean {
+        val actions = listOf(Settings.ACTION_INTERNAL_STORAGE_SETTINGS, Settings.ACTION_MEMORY_CARD_SETTINGS, Settings.ACTION_SETTINGS)
+        for (action in actions) {
+            try {
+                startActivity(Intent(action))
+                return true
+            } catch (e: Exception) {
+                // coba alternatif berikutnya
+            }
+        }
+        return false
     }
 
     private fun openDocument(uri: String, mime: String): Boolean = try {
@@ -171,6 +207,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        sensorStreamer.stop()
         executor.shutdown()
         super.onDestroy()
     }

@@ -246,17 +246,19 @@ class CpuInfo {
 }
 
 class SensorItem {
-  const SensorItem({required this.name, required this.vendor, required this.type, this.power});
+  const SensorItem({required this.name, required this.vendor, required this.type, this.typeInt, this.power});
 
   final String name;
   final String vendor;
   final String type;
+  final int? typeInt;
   final double? power;
 
   factory SensorItem.fromMap(Map<String, dynamic> m) => SensorItem(
         name: asString(m['name']) ?? '—',
         vendor: asString(m['vendor']) ?? '—',
         type: asString(m['type']) ?? '—',
+        typeInt: asInt(m['typeInt']),
         power: asDouble(m['power']),
       );
 }

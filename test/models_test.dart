@@ -46,7 +46,7 @@ void main() {
     expect(a.canLaunch, isTrue);
   });
 
-  test('Laporan menulis "Tidak tersedia" saat data kosong dan memuat branding', () {
+  test('Laporan menulis "N/A" saat data kosong dan memuat branding', () {
     final text = ReportService.toText(ReportService.sections(null, null, const []), now: DateTime(2026, 1, 2, 3, 4, 5));
     expect(text, contains(kUnavailable));
     expect(text, contains('Task X by mujib_syarif'));

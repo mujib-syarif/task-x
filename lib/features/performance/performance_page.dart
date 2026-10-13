@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/services/metrics_service.dart';
 import '../../core/services/services.dart';
+import '../../core/widgets/metrics_scope.dart';
 import 'tabs/battery_tab.dart';
 import 'tabs/cpu_tab.dart';
 import 'tabs/network_tab.dart';
@@ -17,7 +18,8 @@ class PerformancePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
+    return MetricsScope(
+      child: DefaultTabController(
       length: PerfTab.values.length,
       initialIndex: initialTab.index,
       child: Scaffold(
@@ -52,6 +54,7 @@ class PerformancePage extends StatelessWidget {
             },
           ),
         ),
+      ),
       ),
     );
   }

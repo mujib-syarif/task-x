@@ -34,6 +34,7 @@ class _StoragePageState extends State<StoragePage> {
   void initState() {
     super.initState();
     _uri = Services.settings.lastScanUri;
+    Services.metrics.refresh();
     _loadApps();
   }
 

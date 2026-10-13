@@ -1,4 +1,5 @@
-const String kUnavailable = 'Tidak tersedia';
+/// Nilai yang tidak dapat dibaca dari Android (bukan angka karangan).
+const String kUnavailable = 'N/A';
 
 /// Ukuran dengan basis 1024 (konvensi Android untuk RAM/penyimpanan).
 String formatBytes(num? bytes, {int decimals = 1}) {
@@ -24,14 +25,17 @@ String formatPercent(double? fraction, {int decimals = 0}) {
   return '${(fraction * 100).toStringAsFixed(decimals)}%';
 }
 
+/// Format Indonesia yang konsisten: "1 hari 9 jam 11 menit".
 String formatDuration(Duration d) {
+  if (d.isNegative) d = Duration.zero;
   final days = d.inDays;
   final hours = d.inHours % 24;
   final minutes = d.inMinutes % 60;
   final seconds = d.inSeconds % 60;
-  if (days > 0) return '$days hr $hours jam $minutes mnt';
-  if (d.inHours > 0) return '${d.inHours} jam $minutes mnt';
-  return '${d.inMinutes} mnt $seconds dtk';
+  if (days > 0) return '$days hari $hours jam $minutes menit';
+  if (d.inHours > 0) return '${d.inHours} jam $minutes menit';
+  if (d.inMinutes > 0) return '${d.inMinutes} menit $seconds detik';
+  return '$seconds detik';
 }
 
 String two(int n) => n.toString().padLeft(2, '0');
@@ -63,9 +67,9 @@ String formatAgo(int? millis, {DateTime? now}) {
   if (millis == null || millis <= 0) return '—';
   final diff = (now ?? DateTime.now()).difference(DateTime.fromMillisecondsSinceEpoch(millis));
   if (diff.inSeconds < 60) return 'baru saja';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} mnt lalu';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
   if (diff.inHours < 24) return '${diff.inHours} jam lalu';
-  return '${diff.inDays} hr lalu';
+  return '${diff.inDays} hari lalu';
 }
 
 String formatFrequency(int? khz) {

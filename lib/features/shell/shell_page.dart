@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/metrics_scope.dart';
 import '../app_manager/apps_page.dart';
 import '../dashboard/dashboard_page.dart';
 import '../processes/processes_page.dart';
@@ -22,7 +23,7 @@ class _ShellPageState extends State<ShellPage> {
   final Set<int> _visited = {0};
 
   Widget _page(int i) => switch (i) {
-        0 => const DashboardPage(),
+        0 => MetricsScope(active: _index == 0, child: const DashboardPage()),
         1 => const ProcessesPage(),
         2 => const AppsPage(),
         3 => const ToolsPage(),
@@ -44,7 +45,8 @@ class _ShellPageState extends State<ShellPage> {
         body: IndexedStack(
           index: _index,
           children: [
-            for (var i = 0; i < 5; i++) _visited.contains(i) ? _page(i) : const SizedBox.shrink(),
+            for (var i = 0; i < 5; i++)
+              _visited.contains(i) ? TickerMode(enabled: i == _index, child: _page(i)) : const SizedBox.shrink(),
           ],
         ),
         bottomNavigationBar: _GlassNavBar(

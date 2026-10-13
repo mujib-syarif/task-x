@@ -209,7 +209,9 @@ class DeviceProvider(private val ctx: Context) {
             m["name"] = s.name
             m["vendor"] = s.vendor
             m["type"] = s.stringType
+            m["typeInt"] = s.type
             m["power"] = s.power.toDouble()
+            m["maxRange"] = s.maximumRange.toDouble()
             m
         }
     }

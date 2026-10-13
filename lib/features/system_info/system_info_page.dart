@@ -22,6 +22,12 @@ class _SystemInfoPageState extends State<SystemInfoPage> {
     NativeBridge.instance.sensors(),
   ]);
 
+  @override
+  void initState() {
+    super.initState();
+    Services.metrics.refresh();
+  }
+
   Future<void> _copy(List<ReportSection> sections) async {
     final text = ReportService.toText(sections);
     await Clipboard.setData(ClipboardData(text: text));

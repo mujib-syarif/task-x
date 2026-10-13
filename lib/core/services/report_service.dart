@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/device_models.dart';
 import '../utils/format.dart';
 import 'metrics_service.dart';
@@ -77,7 +79,7 @@ class ReportService {
         ReportRow('Level', bat?.percent == null ? kUnavailable : '${bat!.percent}%'),
         ReportRow('Status', _v(bat?.statusLabel)),
         ReportRow('Sumber daya', _v(bat?.pluggedLabel)),
-        ReportRow('Suhu baterai', bat?.temperatureC == null ? kUnavailable : '${bat!.temperatureC!.toStringAsFixed(1)} °C'),
+        ReportRow('Suhu baterai (bukan suhu CPU)', bat?.temperatureC == null ? kUnavailable : '${bat!.temperatureC!.toStringAsFixed(1)} °C'),
         ReportRow('Tegangan', bat?.voltageMv == null ? kUnavailable : '${bat!.voltageMv} mV'),
         ReportRow('Kondisi', _v(bat?.healthLabel)),
         ReportRow('Teknologi', _v(bat?.technology)),
@@ -88,6 +90,15 @@ class ReportService {
         ReportRow('Internet tervalidasi', net == null ? kUnavailable : (net.validated ? 'Ya' : 'Tidak')),
         ReportRow('Total diterima (sejak boot)', net?.rxBytes == null ? kUnavailable : formatBytes(net!.rxBytes)),
         ReportRow('Total dikirim (sejak boot)', net?.txBytes == null ? kUnavailable : formatBytes(net!.txBytes)),
+        ReportRow(
+          'Diterima (sesi Task X)',
+          s?.sessionRxBytes == null ? kUnavailable : formatBytes(s!.sessionRxBytes),
+        ),
+        ReportRow(
+          'Dikirim (sesi Task X)',
+          s?.sessionTxBytes == null ? kUnavailable : formatBytes(s!.sessionTxBytes),
+        ),
+        const ReportRow('Cakupan lalu lintas', 'Seluruh sistem, bukan per aplikasi'),
       ]),
       ReportSection('Sensor (${sensors.length})', [
         for (final sensor in sensors) ReportRow(sensor.name, sensor.type),
@@ -113,5 +124,96 @@ class ReportService {
       b.writeln();
     }
     return b.toString();
+  }
+
+  /// Laporan terstruktur untuk JSON. Nilai yang tidak terbaca ditulis null (bukan angka karangan).
+  /// Tidak memuat identitas pribadi: tanpa daftar aplikasi, SSID, alamat IP, atau ID perangkat.
+  static Map<String, Object?> toJsonMap(
+    DeviceInfo? d,
+    MetricsSnapshot? s,
+    List<SensorItem> sensors, {
+    DateTime? now,
+  }) {
+    final t = now ?? DateTime.now();
+    final mem = s?.memory;
+    final sto = s?.storage;
+    final bat = s?.battery;
+    final net = s?.network;
+    final cpu = s?.cpu;
+    return {
+      'generator': 'Task X by mujib_syarif',
+      'schemaVersion': 1,
+      'generatedAt': t.toIso8601String(),
+      'app': {'version': d?.appVersion, 'build': d?.appBuild},
+      'device': {
+        'model': d?.model,
+        'manufacturer': d?.manufacturer,
+        'brand': d?.brand,
+        'device': d?.device,
+        'hardware': d?.hardware,
+        'board': d?.board,
+        'soc': d?.soc,
+        'cpuCores': d?.cpuCores,
+        'abis': d?.abis,
+        'screen': d == null
+            ? null
+            : {'widthPx': d.screenWidthPx, 'heightPx': d.screenHeightPx, 'densityDpi': d.densityDpi},
+        'uptimeMs': s?.uptimeMs,
+      },
+      'android': {'version': d?.androidVersion, 'sdk': d?.sdkInt, 'securityPatch': d?.securityPatch},
+      'cpu': {
+        'usageFraction': s?.cpuUsage,
+        'usageNote': cpu?.stat == null ? 'Dibatasi Android (/proc/stat tidak terbaca)' : null,
+        'currentKhz': cpu?.curKhz,
+        'maxKhz': cpu?.maxKhz,
+      },
+      'memory': mem == null
+          ? null
+          : {
+              'totalBytes': mem.totalBytes,
+              'usedBytes': mem.usedBytes,
+              'availableBytes': mem.availBytes,
+              'lowMemory': mem.lowMemory,
+            },
+      'storage': sto == null
+          ? null
+          : {'totalBytes': sto.totalBytes, 'usedBytes': sto.usedBytes, 'availableBytes': sto.availBytes},
+      'battery': bat == null
+          ? null
+          : {
+              'percent': bat.percent,
+              'status': bat.statusLabel,
+              'plugged': bat.pluggedLabel,
+              'temperatureC': bat.temperatureC,
+              'temperatureNote': 'Suhu baterai, bukan suhu CPU',
+              'voltageMv': bat.voltageMv,
+              'technology': bat.technology,
+            },
+      'network': net == null
+          ? null
+          : {
+              'type': net.type,
+              'vpn': net.vpn,
+              'internetValidated': net.validated,
+              'metered': net.metered,
+              'totalRxBytesSinceBoot': net.rxBytes,
+              'totalTxBytesSinceBoot': net.txBytes,
+              'sessionRxBytes': s?.sessionRxBytes,
+              'sessionTxBytes': s?.sessionTxBytes,
+              'trafficScope': 'Seluruh sistem (semua aplikasi), bukan per aplikasi',
+            },
+      'sensors': [
+        for (final x in sensors) {'name': x.name, 'vendor': x.vendor, 'type': x.type},
+      ],
+    };
+  }
+
+  static String toJson(DeviceInfo? d, MetricsSnapshot? s, List<SensorItem> sensors, {DateTime? now}) =>
+      const JsonEncoder.withIndent('  ').convert(toJsonMap(d, s, sensors, now: now));
+
+  /// Nama berkas laporan, mis. taskx_laporan_20261013_1644.json
+  static String fileName(String ext, {DateTime? now}) {
+    final t = now ?? DateTime.now();
+    return 'taskx_laporan_${t.year}${two(t.month)}${two(t.day)}_${two(t.hour)}${two(t.minute)}.$ext';
   }
 }

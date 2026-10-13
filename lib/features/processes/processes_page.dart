@@ -110,7 +110,7 @@ class _ProcessesPageState extends State<ProcessesPage> with WidgetsBindingObserv
     final u = _usage[a.packageName];
     if (u == null) return 'Ukuran APK ${formatBytes(a.apkSize)}';
     final mins = (u.foregroundMs / 60000).round();
-    return 'Dipakai ${formatAgo(u.lastUsed)} · foreground 24 jam: $mins mnt';
+    return 'Dipakai ${formatAgo(u.lastUsed)} · foreground 24 jam: $mins menit';
   }
 
   @override

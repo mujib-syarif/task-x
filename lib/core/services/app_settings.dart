@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/thermal.dart';
+
 /// ID modul kartu pada Beranda.
 class DashboardModule {
   DashboardModule._();
@@ -33,6 +35,8 @@ class AppSettings extends ChangeNotifier {
   int intervalSeconds = 2;
   int historyPoints = 60;
   bool filledCharts = true;
+  bool thermalAlert = true;
+  int thermalWarnC = Thermal.defaultWarnC;
   Set<String> modules = {...DashboardModule.all};
   String? lastScanUri;
 
@@ -49,6 +53,9 @@ class AppSettings extends ChangeNotifier {
       final history = p.getInt('history');
       if (history != null && historyOptions.contains(history)) historyPoints = history;
       filledCharts = p.getBool('filled') ?? true;
+      thermalAlert = p.getBool('thermalAlert') ?? true;
+      final warn = p.getInt('thermalWarnC');
+      if (warn != null && Thermal.warnOptions.contains(warn)) thermalWarnC = warn;
       final mods = p.getStringList('modules');
       if (mods != null) modules = mods.where(DashboardModule.all.contains).toSet();
       lastScanUri = p.getString('lastScanUri');
@@ -78,6 +85,18 @@ class AppSettings extends ChangeNotifier {
   void setFilledCharts(bool value) {
     filledCharts = value;
     _prefs?.setBool('filled', value);
+    notifyListeners();
+  }
+
+  void setThermalAlert(bool value) {
+    thermalAlert = value;
+    _prefs?.setBool('thermalAlert', value);
+    notifyListeners();
+  }
+
+  void setThermalWarnC(int celsius) {
+    thermalWarnC = celsius;
+    _prefs?.setInt('thermalWarnC', celsius);
     notifyListeners();
   }
 

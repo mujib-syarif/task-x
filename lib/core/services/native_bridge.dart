@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 
 import '../models/app_models.dart';
 import '../models/device_models.dart';
+import '../models/sensor_models.dart';
 import '../models/storage_models.dart';
 import '../utils/json_utils.dart';
 
@@ -13,6 +14,7 @@ class NativeBridge {
 
   static final NativeBridge instance = NativeBridge._();
   static const MethodChannel _ch = MethodChannel('taskx/native');
+  static const EventChannel _sensorCh = EventChannel('taskx/sensors');
 
   Future<Object?> _raw(String method, [Map<String, dynamic>? args]) async {
     try {
@@ -88,6 +90,20 @@ class NativeBridge {
   Future<bool> openDocument(String uri, String mime) => _bool('openDocument', {'uri': uri, 'mime': mime});
 
   /// Menyimpan teks lewat dialog "Simpan sebagai" milik sistem. Mengembalikan URI atau null jika dibatalkan.
-  Future<String?> saveTextFile(String name, String content) async =>
-      asString(await _raw('saveTextFile', {'name': name, 'content': content}));
+  Future<String?> saveTextFile(String name, String content, {String mime = 'text/plain'}) async =>
+      asString(await _raw('saveTextFile', {'name': name, 'content': content, 'mime': mime}));
+
+  /// Membuka lembar berbagi Android. Pengguna memilih tujuan; Task X tidak mengirim apa pun sendiri.
+  Future<bool> shareText(String subject, String text) => _bool('shareText', {'subject': subject, 'text': text});
+
+  Future<bool> openStorageSettings() => _bool('openStorageSettings');
+
+  /// Aliran pembacaan sensor. Pendengar native hanya aktif selama ada langganan.
+  Stream<SensorReading> sensorStream(List<int> types) {
+    return _sensorCh
+        .receiveBroadcastStream(types)
+        .map((e) => SensorReading.fromEvent(e))
+        .where((r) => r != null)
+        .cast<SensorReading>();
+  }
 }
