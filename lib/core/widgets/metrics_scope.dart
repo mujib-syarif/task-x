@@ -20,7 +20,7 @@ class _MetricsScopeState extends State<MetricsScope> {
   bool _held = false;
 
   void _update() {
-    final want = widget.active && TickerMode.of(context);
+    final want = widget.active && TickerMode.valuesOf(context).enabled;
     if (want == _held) return;
     _held = want;
     if (want) {
