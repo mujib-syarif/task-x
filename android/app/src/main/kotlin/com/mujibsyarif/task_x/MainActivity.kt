@@ -51,11 +51,12 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "deviceInfo" -> result.success(device.deviceInfo())
                 "uptimeMs" -> result.success(device.uptimeMs())
-                "memory" -> result.success(device.memory())
-                "storage" -> result.success(device.storage())
-                "battery" -> result.success(device.battery())
-                "network" -> result.success(device.network())
-                "cpu" -> result.success(device.cpu())
+                // Membaca sysfs/proc: jalankan di executor, bukan di main thread.
+                "memory" -> async(result) { device.memory() }
+                "storage" -> async(result) { device.storage() }
+                "battery" -> async(result) { device.battery() }
+                "network" -> async(result) { device.network() }
+                "cpu" -> async(result) { device.cpu() }
                 "sensors" -> result.success(device.sensors())
                 "ownProcess" -> async(result) { device.ownProcess() }
                 "clearOwnCache" -> async(result) { device.clearOwnCache() }
