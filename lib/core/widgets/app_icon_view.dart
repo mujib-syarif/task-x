@@ -8,10 +8,34 @@ import '../theme/app_theme.dart';
 class IconCache {
   IconCache._();
 
+  static const int _maxEntries = 200;
+
+  // Map literal mempertahankan urutan sisip; entri tertua ada di depan (LRU).
   static final Map<String, Future<Uint8List?>> _cache = {};
 
   static Future<Uint8List?> get(String packageName, int px) {
-    return _cache.putIfAbsent(packageName, () => NativeBridge.instance.appIcon(packageName, px));
+    final hit = _cache.remove(packageName);
+    if (hit != null) {
+      _cache[packageName] = hit; // tandai sebagai paling baru dipakai
+      return hit;
+    }
+    final future = NativeBridge.instance.appIcon(packageName, px);
+    _cache[packageName] = future;
+    while (_cache.length > _maxEntries) {
+      _cache.remove(_cache.keys.first);
+    }
+    // Jangan menyimpan hasil null (gagal) agar bisa dicoba lagi.
+    future.then<void>(
+      (data) {
+        if (data == null && identical(_cache[packageName], future)) {
+          _cache.remove(packageName);
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (identical(_cache[packageName], future)) _cache.remove(packageName);
+      },
+    );
+    return future;
   }
 }
 
