@@ -7,6 +7,9 @@
     <!-- Daftar aplikasi terinstal (Android 11+ memfilter visibilitas paket). Dipakai oleh Manajer Aplikasi. -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
+    <!-- Wajib (target SDK 28+) agar ACTION_UNINSTALL_PACKAGE/ACTION_DELETE dapat dipakai. Pengguna tetap mengonfirmasi di layar sistem. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
     <!-- Opsional: hanya aktif jika pengguna memberi "Akses penggunaan" lewat Pengaturan sistem. -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"

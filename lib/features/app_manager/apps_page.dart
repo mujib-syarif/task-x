@@ -83,8 +83,14 @@ class _AppsPageState extends State<AppsPage> {
       };
 
   Future<void> _open(AppInfo app) async {
-    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AppDetailPage(app: app)));
-    if (mounted) _load(force: true);
+    final uninstallStarted = ValueNotifier<bool>(false);
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => AppDetailPage(app: app, uninstallStarted: uninstallStarted)),
+    );
+    // Muat ulang hanya bila uninstall dimulai; selain itu daftar tidak berubah.
+    final started = uninstallStarted.value;
+    uninstallStarted.dispose();
+    if (mounted && started) _load(force: true);
   }
 
   @override
