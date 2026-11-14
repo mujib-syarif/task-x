@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/services.dart';
 
 import '../models/app_models.dart';
@@ -19,9 +21,11 @@ class NativeBridge {
   Future<Object?> _raw(String method, [Map<String, dynamic>? args]) async {
     try {
       return await _ch.invokeMethod<Object?>(method, args);
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      developer.log('Panggilan native "$method" gagal: ${e.code} ${e.message}', name: 'NativeBridge', error: e);
       return null;
-    } on MissingPluginException {
+    } on MissingPluginException catch (e) {
+      developer.log('Metode native "$method" tidak tersedia', name: 'NativeBridge', error: e);
       return null;
     }
   }
