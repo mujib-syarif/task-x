@@ -51,7 +51,19 @@ class LineChart extends StatelessWidget {
     final grid = context.fg.withValues(alpha: 0.08);
     final labelStyle = TextStyle(fontSize: 10.5, color: context.muted);
 
-    return SizedBox(
+    final parts = <String>[
+      for (final s in series)
+        if (s.values.isNotEmpty) '${s.label ?? 'Seri'} ${s.values.last.toStringAsFixed(decimals)}$unit',
+    ];
+    final summary = hasData
+        ? 'Grafik garis, nilai terakhir: ${parts.join(', ')}. Skala ${minY.toStringAsFixed(decimals)} sampai ${top.toStringAsFixed(decimals)}$unit'
+        : 'Grafik garis, sedang mengumpulkan data';
+
+    return Semantics(
+      label: summary,
+      container: true,
+      child: ExcludeSemantics(
+        child: SizedBox(
       height: height,
       width: double.infinity,
       child: Stack(
@@ -76,6 +88,8 @@ class LineChart extends StatelessWidget {
               child: Text('Mengumpulkan data…', style: labelStyle),
             ),
         ],
+      ),
+        ),
       ),
     );
   }

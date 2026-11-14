@@ -28,6 +28,15 @@ class DataBadge extends StatelessWidget {
       DataKind.snapshot => context.muted,
       DataKind.unavailable => AppColors.orange,
     };
+    // Di tema terang teks memakai varian lebih gelap (kontras >= 4.5:1 terhadap latar badge).
+    final textColor = context.isDark
+        ? color
+        : switch (kind) {
+            DataKind.realtime => const Color(0xFF14692C),
+            DataKind.periodic => const Color(0xFF0A5F6E),
+            DataKind.snapshot => const Color(0xFF55555A),
+            DataKind.unavailable => const Color(0xFF854D00),
+          };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -36,7 +45,7 @@ class DataBadge extends StatelessWidget {
       ),
       child: Text(
         detail == null ? label : '$label · $detail',
-        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: textColor),
       ),
     );
   }
