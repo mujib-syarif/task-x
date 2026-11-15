@@ -10,9 +10,12 @@ import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/glass_card.dart';
 
 class AppDetailPage extends StatelessWidget {
-  const AppDetailPage({super.key, required this.app});
+  const AppDetailPage({super.key, required this.app, this.uninstallStarted});
 
   final AppInfo app;
+
+  /// Diisi true saat layar uninstall sistem berhasil dibuka (dipakai AppsPage untuk memuat ulang).
+  final ValueNotifier<bool>? uninstallStarted;
 
   Future<void> _uninstall(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -31,6 +34,7 @@ class AppDetailPage extends StatelessWidget {
     );
     if (ok != true) return;
     final started = await NativeBridge.instance.uninstallApp(app.packageName);
+    if (started) uninstallStarted?.value = true;
     if (!context.mounted) return;
     if (!started) showMessage(context, 'Tidak dapat membuka layar uninstall');
   }

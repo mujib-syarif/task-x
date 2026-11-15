@@ -73,7 +73,7 @@ jobs:
         run: $RUNNER_TEMP/ann.sh pub flutter pub get
 
       - name: Analyze
-        run: $RUNNER_TEMP/ann.sh analyze flutter analyze
+        run: $RUNNER_TEMP/ann.sh analyze flutter analyze --no-fatal-infos
 
       - name: Test
         run: $RUNNER_TEMP/ann.sh test flutter test

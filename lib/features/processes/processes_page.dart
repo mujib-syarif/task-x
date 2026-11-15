@@ -52,28 +52,37 @@ class _ProcessesPageState extends State<ProcessesPage> with WidgetsBindingObserv
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Pengguna mungkin baru saja memberi/mencabut Akses penggunaan di Pengaturan.
-    if (state == AppLifecycleState.resumed) _load();
+    // Jangan muat ulang bila tab Proses sedang tidak terlihat (IndexedStack).
+    if (state == AppLifecycleState.resumed && mounted && TickerMode.valuesOf(context).enabled) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
-    final bridge = NativeBridge.instance;
-    final results = await Future.wait<Object?>([
-      AppRepository.instance.load(),
-      bridge.hasUsageAccess(),
-      bridge.ownProcess(),
-    ]);
-    final apps = results[0] as List<AppInfo>;
-    final access = results[1] as bool;
-    final own = results[2] as OwnProcessInfo?;
-    final usage = access ? await bridge.recentlyUsed() : const <UsageEntry>[];
-    if (!mounted) return;
-    setState(() {
-      _apps = apps;
-      _hasAccess = access;
-      _own = own;
-      _usage = {for (final u in usage) u.packageName: u};
-      _loading = false;
-    });
+    try {
+      final bridge = NativeBridge.instance;
+      final results = await Future.wait<Object?>([
+        AppRepository.instance.load(),
+        bridge.hasUsageAccess(),
+        bridge.ownProcess(),
+      ]);
+      final apps = results[0] as List<AppInfo>;
+      final access = results[1] as bool;
+      final own = results[2] as OwnProcessInfo?;
+      final usage = access ? await bridge.recentlyUsed() : const <UsageEntry>[];
+      if (!mounted) return;
+      setState(() {
+        _apps = apps;
+        _hasAccess = access;
+        _own = own;
+        _usage = {for (final u in usage) u.packageName: u};
+      });
+    } catch (e) {
+      debugPrint('ProcessesPage._load gagal: $e');
+    } finally {
+      // Pastikan spinner selalu berhenti, termasuk saat pemuatan gagal.
+      if (mounted && _loading) setState(() => _loading = false);
+    }
   }
 
   List<AppInfo> _visible() {

@@ -16,6 +16,10 @@ import java.io.File
 /** Daftar aplikasi, ikon, aksi resmi (buka, info aplikasi, uninstall), dan statistik penggunaan opsional. */
 class AppsProvider(private val ctx: Context) {
 
+    private companion object {
+        const val MAX_ICON_PX = 256
+    }
+
     fun count(): Int = ctx.packageManager.getInstalledPackages(0).size
 
     @Suppress("DEPRECATION")
@@ -46,7 +50,9 @@ class AppsProvider(private val ctx: Context) {
         return out
     }
 
-    fun appIcon(pkg: String, px: Int): ByteArray? {
+    fun appIcon(pkg: String, requestedPx: Int): ByteArray? {
+        // Batasi ukuran agar permintaan besar tidak menghabiskan memori.
+        val px = requestedPx.coerceIn(1, MAX_ICON_PX)
         val drawable = try {
             ctx.packageManager.getApplicationIcon(pkg)
         } catch (e: Exception) {
@@ -85,13 +91,20 @@ class AppsProvider(private val ctx: Context) {
     }
 
     /** Memakai alur uninstall resmi Android (pengguna tetap harus mengonfirmasi). */
-    fun uninstall(pkg: String): Boolean = try {
-        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$pkg"))
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        ctx.startActivity(intent)
-        true
-    } catch (e: Exception) {
-        false
+    fun uninstall(pkg: String): Boolean {
+        val uri = Uri.fromParts("package", pkg, null)
+        // Membutuhkan REQUEST_DELETE_PACKAGES di manifest. ACTION_DELETE sebagai cadangan.
+        for (action in listOf(Intent.ACTION_UNINSTALL_PACKAGE, Intent.ACTION_DELETE)) {
+            try {
+                val intent = Intent(action, uri)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                ctx.startActivity(intent)
+                return true
+            } catch (e: Exception) {
+                // coba aksi berikutnya
+            }
+        }
+        return false
     }
 
     @Suppress("DEPRECATION")
